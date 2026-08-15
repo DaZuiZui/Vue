@@ -13348,6 +13348,42 @@ describe('VDOM interop', () => {
     )
   })
 
+  test('hydrate nested VDOM slot content inside Vapor Transition', async () => {
+    const data = ref({})
+    const { container } = await testWithVDOMApp(
+      `<script setup>
+        const components = _components
+      </script>
+      <template>
+        <components.VaporChild>
+          <button class="first">First</button>
+          <button class="last">Last</button>
+        </components.VaporChild>
+      </template>`,
+      {
+        VaporChild: {
+          code: `<template>
+            <Transition>
+              <div class="wrapper"><slot /></div>
+            </Transition>
+          </template>`,
+          vapor: true,
+        },
+      },
+      data,
+    )
+
+    expect(
+      Array.from(container.querySelectorAll('.wrapper button')).map(
+        button => button.className,
+      ),
+    ).toEqual(['first', 'last'])
+    expect(
+      '<transition> can only be used on a single element or component',
+    ).not.toHaveBeenWarned()
+    expect('Hydration node mismatch').not.toHaveBeenWarned()
+  })
+
   test('hydrate Vapor Transition fallback in out-in mode', async () => {
     let leaveDone: (() => void) | undefined
     const onLeave = vi.fn((_el: Element, done: () => void) => {

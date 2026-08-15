@@ -1369,6 +1369,42 @@ describe('Transition', () => {
     enterDone!()
   })
 
+  test('nested vdom slot content should not be treated as transition children', () => {
+    const data = ref({})
+    const Child = compile(
+      `<template>
+        <Transition>
+          <div class="wrapper">
+            <slot />
+          </div>
+        </Transition>
+      </template>`,
+      data,
+    )
+    const App = compile(
+      `<script setup>
+        const components = _components
+      </script>
+      <template>
+        <components.Child>
+          <button class="first">First</button>
+          <button class="last">Last</button>
+        </components.Child>
+      </template>`,
+      data,
+      { Child },
+      { vapor: false },
+    )
+    const { host } = defineInterop(App as any).render()
+
+    expect(host.querySelector('.wrapper')!.innerHTML).toBe(
+      '<button class="first">First</button><button class="last">Last</button>',
+    )
+    expect(
+      '<transition> can only be used on a single element or component',
+    ).not.toHaveBeenWarned()
+  })
+
   test('vdom slot fragment keys should control transition child identity', async () => {
     const key = ref('a')
     const Child = compile(

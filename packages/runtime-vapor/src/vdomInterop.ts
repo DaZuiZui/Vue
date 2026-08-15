@@ -207,6 +207,7 @@ function isVaporTransitionHooks(
 
 function prepareInteropSlotTransition(
   frag: RenderContextFragment,
+  isSlotRoot: boolean,
   vnode: VNode,
   previous: VNode | undefined,
   resumeAfterLeave: () => void,
@@ -228,7 +229,11 @@ function prepareInteropSlotTransition(
   // during hydration, but it must already use BaseTransition's branch shape.
   if (
     !transition &&
-    !(instance && isVaporTransition(instance.type as VaporComponent))
+    !(
+      isSlotRoot &&
+      instance &&
+      isVaporTransition(instance.type as VaporComponent)
+    )
   ) {
     return
   }
@@ -1562,6 +1567,7 @@ function renderVDOMSlot(
 ): VaporFragment {
   let suspense = currentParentSuspense || parentComponent.suspense
   const frag = createInteropFragment()
+  const isSlotRoot = !!(slotRoot || inheritFallback)
   // `isBlockValid` below reports VDOM-side validity (`contentState.valid`), not
   // `isValidBlock(frag.nodes)`: `frag.nodes` tracks the active fallback when one
   // is shown. (Optimism rationale: see createVNodeFragment.)
@@ -1814,8 +1820,13 @@ function renderVDOMSlot(
       const content = pending.content
       if (isVNode(content)) {
         const nextVNode =
-          prepareInteropSlotTransition(frag, content, undefined, NOOP) ||
-          content
+          prepareInteropSlotTransition(
+            frag,
+            isSlotRoot,
+            content,
+            undefined,
+            NOOP,
+          ) || content
         patchSlotVNode(
           pending.placeholder,
           nextVNode,
@@ -1986,6 +1997,7 @@ function renderVDOMSlot(
               if (isVNode(hydratedContent)) {
                 const transitionChild = prepareInteropSlotTransition(
                   frag,
+                  isSlotRoot,
                   hydratedContent,
                   undefined,
                   NOOP,
@@ -2200,6 +2212,7 @@ function renderVDOMSlot(
                   const placeholder =
                     prepareInteropSlotTransition(
                       frag,
+                      isSlotRoot,
                       slotContent,
                       undefined,
                       NOOP,
@@ -2248,6 +2261,7 @@ function renderVDOMSlot(
               }
               const transitionChild = prepareInteropSlotTransition(
                 frag,
+                isSlotRoot,
                 slotContent,
                 prevVNode || undefined,
                 resumeOutIn,
