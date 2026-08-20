@@ -1590,4 +1590,34 @@ describe('vModel', () => {
     await nextTick()
     expect(foo.checked).toEqual(false)
   })
+
+  it('single select (option value is Map)', async () => {
+    const fooValue = new Map([['id', 1]])
+    const barValue = new Map([['id', 2]])
+    const component = defineComponent({
+      data() {
+        return { value: barValue }
+      },
+      render() {
+        return [
+          withVModel(
+            h('select', { 'onUpdate:modelValue': setValue.bind(this) }, [
+              h('option', { value: fooValue }, 'foo'),
+              h('option', { value: barValue }, 'bar'),
+            ]),
+            this.value,
+          ),
+        ]
+      },
+    })
+
+    render(h(component), root)
+    await nextTick()
+
+    const input = root.querySelector('select')!
+    const [foo, bar] = root.querySelectorAll('option')
+    expect(input.selectedIndex).toBe(1)
+    expect(foo.selected).toBe(false)
+    expect(bar.selected).toBe(true)
+  })
 })
